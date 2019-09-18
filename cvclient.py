@@ -274,7 +274,6 @@ def showrt():
     for addr, node in nodes.items():
         if addr != me:
             tb.add_row([node_name[addr[-5:]], node_name[node['route'][-5:]], node['cost']])
-            # tb.add_row([addr[-5:], node['route'][-5:], node['cost']])
     print(tb)
 
 
@@ -427,6 +426,7 @@ node_name = {
     '20002' : "C",
     '20003' : "D",
     '20004' : "E",
+    ''      : " ",
 }
 
 if __name__ == '__main__':
@@ -450,6 +450,7 @@ if __name__ == '__main__':
     # for print the log
     neighbors_num = get_neighbors_num()
     i = 0
+    show_flag = 1
     iter_num = 0
     # broadcast costs every timeout seconds
     broadcast_costs()
@@ -471,7 +472,7 @@ if __name__ == '__main__':
                 if cmd in [LINKDOWN, LINKUP, LINKCHANGE]:
                     # notify node on other end of the link of action
                     data = json.dumps({ 'type': cmd, 'payload': parsed['payload'] })
-                    sock.sendto(data, parsed['addr'])
+                    sock.sendto(data.encode(), parsed['addr'])
                 # perform cmd on this side of the link
                 user_cmds[cmd](*parsed['addr'], **parsed['payload'])
             else:
@@ -486,7 +487,8 @@ if __name__ == '__main__':
                     continue
                 updates[update](*sender, **payload)
                 # show the result when collect all the message from the neighbors
-                if i % neighbors_num == 0:
+                if i % neighbors_num == 0 and show_flag == 1:
                     showrt()
                     i = 0
+
     sock.close()
