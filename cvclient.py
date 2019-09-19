@@ -9,7 +9,8 @@ import prettytable as pt
 import operator
 
 SIZE = 4096
-
+# the value to switch the poisoned_cost
+poisoned_flag = 1
 # user commands and inter-node protocol update types
 # note: set of commands and set of protocol messages intersect!
 #       if you want a list see user_cmds and udpates near main.
@@ -117,20 +118,21 @@ def update_costs(host, port, **kwargs):
     estimate_costs()
 
 
-def broadcast_costs():
+def broadcast_costs(poisoned_flag):
     """ send estimated path costs to each neighbor """
     costs = { addr: node['cost'] for addr, node in nodes.items() }
     data = { 'type': COSTSUPDATE }  # 这个会触发updata_costs的函数
     for neighbor_addr, neighbor in get_neighbors().items():
         # poison reverse
         poisoned_costs = copy.deepcopy(costs)
-        for dest_addr, cost in costs.items():
-            # only do poisoned reverse if destination not me or neighbor
-            if dest_addr not in [me, neighbor_addr]:
-                # if we route through neighbor to get to destination ...
-                if nodes[dest_addr]['route'] == neighbor_addr:
-                    # ... tell neighbor distance to destination is infinty!
-                    poisoned_costs[dest_addr] = float("inf")
+        if poisoned_flag :
+            for dest_addr, cost in costs.items():
+                # only do poisoned reverse if destination not me or neighbor
+                if dest_addr not in [me, neighbor_addr]:
+                    # if we route through neighbor to get to destination ...
+                    if nodes[dest_addr]['route'] == neighbor_addr:
+                        # ... tell neighbor distance to destination is infinty!
+                        poisoned_costs[dest_addr] = float("inf")
         data['payload'] = { 'costs': poisoned_costs }
         data['payload']['neighbor'] = { 'direct': neighbor['direct'] }
         # send (potentially 'poisoned') costs to neighbor
@@ -460,7 +462,7 @@ if __name__ == '__main__':
     nodes_costs = {addr: node['cost'] for addr, node in nodes.items()}
     pre_nodes_costs = copy.deepcopy(nodes_costs)
     # broadcast costs every timeout seconds
-    broadcast_costs()
+    broadcast_costs(poisoned_flag)
     RepeatTimer(run_args.timeout, broadcast_costs).start()
 
     # listen for updates from other nodes and user input
