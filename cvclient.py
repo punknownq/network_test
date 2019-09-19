@@ -4,8 +4,9 @@ from select import select
 from collections import defaultdict, namedtuple
 from threading import Thread, Timer
 from datetime import datetime
-from copy import deepcopy
+import copy
 import prettytable as pt
+import operator
 
 SIZE = 4096
 
@@ -122,7 +123,7 @@ def broadcast_costs():
     data = { 'type': COSTSUPDATE }  # 这个会触发updata_costs的函数
     for neighbor_addr, neighbor in get_neighbors().items():
         # poison reverse
-        poisoned_costs = deepcopy(costs)
+        poisoned_costs = copy.deepcopy(costs)
         for dest_addr, cost in costs.items():
             # only do poisoned reverse if destination not me or neighbor
             if dest_addr not in [me, neighbor_addr]:
@@ -404,6 +405,9 @@ def print_nodes():
             print('---- ', k, '\t\t', v)
     #print # extra line
 
+
+
+
 # map command/update/node_name names to functions
 user_cmds = {
     LINKDOWN   : linkdown,
@@ -450,8 +454,11 @@ if __name__ == '__main__':
     # for print the log
     neighbors_num = get_neighbors_num()
     i = 0
+    # for converge
     show_flag = 1
     iter_num = 0
+    nodes_costs = {addr: node['cost'] for addr, node in nodes.items()}
+    pre_nodes_costs = copy.deepcopy(nodes_costs)
     # broadcast costs every timeout seconds
     broadcast_costs()
     RepeatTimer(run_args.timeout, broadcast_costs).start()
@@ -486,9 +493,21 @@ if __name__ == '__main__':
                     print("'{0}' is not in the update protocol\n".format(update))
                     continue
                 updates[update](*sender, **payload)
+                nodes_costs = {addr: node['cost'] for addr, node in nodes.items()}
+                # for test
+                #print("receive message ",i)
                 # show the result when collect all the message from the neighbors
-                if i % neighbors_num == 0 and show_flag == 1:
-                    showrt()
-                    i = 0
+                if i % neighbors_num == 0 and show_flag == 1 :
+                    if operator.eq(pre_nodes_costs,nodes_costs) == 1 :
+                        show_flag = 0
+                        print("The network has converged.")
+
+                    else:
+                        pre_nodes_costs = copy.deepcopy(nodes_costs)
+                        showrt()
+                        i = 0
+                # if i % neighbors_num == 0 :
+                #     showrt()
+                #     i = 0
 
     sock.close()
