@@ -495,17 +495,28 @@ if __name__ == '__main__':
                 updates[update](*sender, **payload)
                 nodes_costs = {addr: node['cost'] for addr, node in nodes.items()}
                 # for test
-                #print("receive message ",i)
+                #print("receive message ", i)
                 # show the result when collect all the message from the neighbors
                 if i % neighbors_num == 0 and show_flag == 1 :
-                    if operator.eq(pre_nodes_costs,nodes_costs) == 1 :
+                    if operator.eq(pre_nodes_costs,nodes_costs) == 1:
                         show_flag = 0
-                        print("The network has converged.")
-
+                        print("The network has converged:")
                     else:
-                        pre_nodes_costs = copy.deepcopy(nodes_costs)
+                        pass
+                    showrt()
+                    i = 0
+                    pre_nodes_costs = copy.deepcopy(nodes_costs)
+                elif i % neighbors_num == 0 and show_flag == 0:
+                    if operator.eq(pre_nodes_costs, nodes_costs) == 1:
+                        pass
+                    else:
                         showrt()
-                        i = 0
+                        show_flag = 1
+                    i = 0
+                    pre_nodes_costs = copy.deepcopy(nodes_costs)
+
+
+
                 # if i % neighbors_num == 0 :
                 #     showrt()
                 #     i = 0
